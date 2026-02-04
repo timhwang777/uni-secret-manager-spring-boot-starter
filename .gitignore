@@ -1,0 +1,70 @@
+# Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+*.swp
+*.swo
+*~
+
+# Claude Code
+.claude/
+
+# Build
+build/
+out/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Spring Boot
+application-*.properties
+application-*.yml
+!application-*.sample.properties
+!application-*.sample.yml
+!application-default.properties
+HELP.md
+
+# Secrets (secret manager specific)
+secrets/
+*.secrets
+credentials.json
+service-account*.json
+gcp-*.json
+aws-credentials
+azure-credentials
+
+# Test
+*.log
+*.tmp
+.testcontainers.properties
+
+# Coverage
+.jacoco/
+jacoco.exec
+
+# Dependency check
+dependency-check-report.html
