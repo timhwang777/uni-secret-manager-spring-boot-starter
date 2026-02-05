@@ -122,13 +122,11 @@ public class SecretReference {
         // Priority 1: Single provider override (most specific)
         if (provider != null && !provider.isEmpty()) {
             return List.of(provider);
-        }
-        // Priority 2: Custom provider chain for this secret
-        else if (providers != null && !providers.isEmpty()) {
-            return providers;
-        }
-        // Priority 3: Fall back to global default order
-        else {
+        } else if (providers != null && !providers.isEmpty()) {
+            // Priority 2: Custom provider chain for this secret
+            return List.copyOf(providers);
+        } else {
+            // Priority 3: Fall back to global default order
             return globalProviderOrder;
         }
     }

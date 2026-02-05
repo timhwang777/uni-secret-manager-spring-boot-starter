@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        SpotBugs exclusions for uni-secret-manager-spring.
+
+        EI_EXPOSE_REP2: "May expose internal representation by storing an externally mutable object"
+        This is a false positive for Spring dependency injection patterns where storing
+        injected beans by reference is intentional and correct behavior.
+
+        CT_CONSTRUCTOR_THROW: "Exception thrown in constructor"
+        Intentional fail-fast validation in constructors is acceptable for Spring beans
+        that should not be created with invalid configuration.
+    -->
+
+    <!-- Exclude EI_EXPOSE_REP2 for Spring-managed beans storing injected dependencies -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Or>
+            <!-- Provider classes storing injected clients and properties -->
+            <Class name="io.github.timhwang777.unisecret.provider.AwsSecretProvider"/>
+            <Class name="io.github.timhwang777.unisecret.provider.GcpSecretProvider"/>
+            <Class name="io.github.timhwang777.unisecret.provider.LocalSecretProvider"/>
+            <Class name="io.github.timhwang777.unisecret.provider.SecretResolver"/>
+            <!-- Service classes storing injected dependencies -->
+            <Class name="io.github.timhwang777.unisecret.service.SecretRefreshService"/>
+            <!-- Utility classes storing configuration -->
+            <Class name="io.github.timhwang777.unisecret.util.RetryHelper"/>
+            <!-- Exception class storing attempt list -->
+            <Class name="io.github.timhwang777.unisecret.exception.SecretNotFoundException"/>
+        </Or>
+    </Match>
+
+    <!-- Exclude CT_CONSTRUCTOR_THROW for intentional fail-fast validation -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+        <Class name="io.github.timhwang777.unisecret.provider.SecretResolver"/>
+    </Match>
+</FindBugsFilter>

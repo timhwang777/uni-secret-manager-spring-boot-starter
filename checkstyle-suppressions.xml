@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Test classes can have longer methods and higher complexity -->
+    <suppress files=".*Test\.java$" checks="CyclomaticComplexity"/>
+    <suppress files=".*Test\.java$" checks="FileLength"/>
+    <suppress files=".*Test\.java$" checks="MethodLength"/>
+
+    <!-- Test classes can have more nested blocks for setup -->
+    <suppress files=".*Test\.java$" checks="NestedTryDepth"/>
+</suppressions>
