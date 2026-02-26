@@ -120,6 +120,11 @@ public class SecretManagerProperties {
     private Gcp gcp = new Gcp();
 
     /**
+     * HashiCorp Vault provider configuration.
+     */
+    private Vault vault = new Vault();
+
+    /**
      * Local provider configuration (for development/testing).
      */
     private Local local = new Local();
@@ -243,6 +248,62 @@ public class SecretManagerProperties {
          *     api-key: test-key-123
          */
         private Map<String, String> secrets = new HashMap<>();
+    }
+
+    /**
+     * HashiCorp Vault provider configuration.
+     */
+    @Data
+    public static class Vault {
+
+        private boolean enabled = false;
+        private String host = "localhost";
+        private int port = 8200;
+        private String scheme = "https";
+        private String namespace;
+        private AuthMethod authMethod = AuthMethod.TOKEN;
+        private String token;
+        private String mount = "secret";
+        private int kvVersion = 2;
+        private AppRole appRole = new AppRole();
+        private Kubernetes kubernetes = new Kubernetes();
+        private Ssl ssl = new Ssl();
+
+        /**
+         * Vault authentication method.
+         */
+        public enum AuthMethod {
+            TOKEN, APPROLE, KUBERNETES
+        }
+
+        /**
+         * AppRole authentication configuration.
+         */
+        @Data
+        public static class AppRole {
+            private String roleId;
+            private String secretId;
+            private String path = "approle";
+        }
+
+        /**
+         * Kubernetes authentication configuration.
+         */
+        @Data
+        public static class Kubernetes {
+            private String role;
+            private String serviceAccountTokenPath =
+                    "/var/run/secrets/kubernetes.io/serviceaccount/token";
+            private String path = "kubernetes";
+        }
+
+        /**
+         * SSL/TLS configuration.
+         */
+        @Data
+        public static class Ssl {
+            private String caCertPath;
+        }
     }
 
     /**

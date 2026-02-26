@@ -1,3 +1,6 @@
+# Private
+reports/
+
 # Maven
 target/
 *.class

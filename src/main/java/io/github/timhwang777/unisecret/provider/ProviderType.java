@@ -48,6 +48,12 @@ public enum ProviderType {
     GCP("gcp"),
 
     /**
+     * HashiCorp Vault KV secrets engine (v1 or v2).
+     * Requires spring-vault-core and a running Vault server.
+     */
+    VAULT("vault"),
+
+    /**
      * Local provider for development and testing.
      * Reads secrets from Spring Environment (application.yml, system properties, env vars).
      */

@@ -54,6 +54,46 @@ secrets:
     default-version: latest
 
   # ============================================
+  # HashiCorp Vault Provider Configuration
+  # ============================================
+  vault:
+    # Enable Vault provider (default: false)
+    # Add "vault" to provider-order when enabling
+    enabled: false
+
+    # Vault server connection (defaults shown)
+    # host: localhost
+    # port: 8200
+    # scheme: https           # Use http for dev-mode Vault only
+
+    # Vault Enterprise namespace (optional)
+    # namespace: team-a
+
+    # Authentication method: TOKEN (default), APPROLE, KUBERNETES
+    auth-method: TOKEN
+    # token:                  # Required for TOKEN auth
+
+    # KV secrets engine
+    # mount: secret           # KV mount path
+    # kv-version: 2           # 1 or 2 (default: 2)
+
+    # AppRole auth (used when auth-method: APPROLE)
+    app-role:
+      # role-id: ${VAULT_ROLE_ID}
+      # secret-id: ${VAULT_SECRET_ID}
+      # path: approle
+
+    # Kubernetes auth (used when auth-method: KUBERNETES)
+    kubernetes:
+      # role: my-app-role
+      # service-account-token-path: /var/run/secrets/kubernetes.io/serviceaccount/token
+      # path: kubernetes
+
+    # TLS configuration
+    ssl:
+      # ca-cert-path: /etc/ssl/vault-ca.pem   # PEM CA cert for self-signed certs
+
+  # ============================================
   # Local Provider Configuration
   # ============================================
   # Useful for development and testing without cloud providers

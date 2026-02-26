@@ -11,6 +11,7 @@ class ProviderTypeTest {
     void shouldConvertFromConfigValue() {
         assertThat(ProviderType.fromConfigValue("aws")).isEqualTo(ProviderType.AWS);
         assertThat(ProviderType.fromConfigValue("gcp")).isEqualTo(ProviderType.GCP);
+        assertThat(ProviderType.fromConfigValue("vault")).isEqualTo(ProviderType.VAULT);
         assertThat(ProviderType.fromConfigValue("local")).isEqualTo(ProviderType.LOCAL);
     }
 
@@ -18,6 +19,7 @@ class ProviderTypeTest {
     void shouldConvertFromConfigValueCaseInsensitive() {
         assertThat(ProviderType.fromConfigValue("AWS")).isEqualTo(ProviderType.AWS);
         assertThat(ProviderType.fromConfigValue("GCP")).isEqualTo(ProviderType.GCP);
+        assertThat(ProviderType.fromConfigValue("VAULT")).isEqualTo(ProviderType.VAULT);
         assertThat(ProviderType.fromConfigValue("LOCAL")).isEqualTo(ProviderType.LOCAL);
     }
 
@@ -32,6 +34,7 @@ class ProviderTypeTest {
     void shouldReturnCorrectConfigValue() {
         assertThat(ProviderType.AWS.getConfigValue()).isEqualTo("aws");
         assertThat(ProviderType.GCP.getConfigValue()).isEqualTo("gcp");
+        assertThat(ProviderType.VAULT.getConfigValue()).isEqualTo("vault");
         assertThat(ProviderType.LOCAL.getConfigValue()).isEqualTo("local");
     }
 }

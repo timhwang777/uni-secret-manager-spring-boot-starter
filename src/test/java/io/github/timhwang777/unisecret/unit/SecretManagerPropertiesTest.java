@@ -47,6 +47,80 @@ class SecretManagerPropertiesTest {
     }
 
     @Test
+    void shouldUseVaultDefaultValues() {
+        contextRunner.run(context -> {
+            SecretManagerProperties properties = context.getBean(SecretManagerProperties.class);
+            SecretManagerProperties.Vault vault = properties.getVault();
+
+            assertThat(vault.isEnabled()).isFalse();
+            assertThat(vault.getHost()).isEqualTo("localhost");
+            assertThat(vault.getPort()).isEqualTo(8200);
+            assertThat(vault.getScheme()).isEqualTo("https");
+            assertThat(vault.getNamespace()).isNull();
+            assertThat(vault.getAuthMethod()).isEqualTo(SecretManagerProperties.Vault.AuthMethod.TOKEN);
+            assertThat(vault.getToken()).isNull();
+            assertThat(vault.getMount()).isEqualTo("secret");
+            assertThat(vault.getKvVersion()).isEqualTo(2);
+            assertThat(vault.getAppRole().getPath()).isEqualTo("approle");
+            assertThat(vault.getKubernetes().getPath()).isEqualTo("kubernetes");
+            assertThat(vault.getKubernetes().getServiceAccountTokenPath())
+                    .isEqualTo("/var/run/secrets/kubernetes.io/serviceaccount/token");
+            assertThat(vault.getSsl().getCaCertPath()).isNull();
+        });
+    }
+
+    @Test
+    void shouldBindCustomVaultConfiguration() {
+        contextRunner
+                .withPropertyValues(
+                        "secrets.vault.enabled=true",
+                        "secrets.vault.host=vault.internal.co",
+                        "secrets.vault.port=8300",
+                        "secrets.vault.scheme=https",
+                        "secrets.vault.namespace=team-a",
+                        "secrets.vault.auth-method=APPROLE",
+                        "secrets.vault.mount=myapp",
+                        "secrets.vault.kv-version=1",
+                        "secrets.vault.app-role.role-id=rid",
+                        "secrets.vault.app-role.secret-id=sid",
+                        "secrets.vault.app-role.path=custom-approle",
+                        "secrets.vault.kubernetes.role=myrole",
+                        "secrets.vault.kubernetes.path=custom-k8s",
+                        "secrets.vault.ssl.ca-cert-path=/etc/ssl/ca.pem"
+                )
+                .run(context -> {
+                    SecretManagerProperties properties = context.getBean(SecretManagerProperties.class);
+                    SecretManagerProperties.Vault vault = properties.getVault();
+
+                    assertThat(vault.isEnabled()).isTrue();
+                    assertThat(vault.getHost()).isEqualTo("vault.internal.co");
+                    assertThat(vault.getPort()).isEqualTo(8300);
+                    assertThat(vault.getScheme()).isEqualTo("https");
+                    assertThat(vault.getNamespace()).isEqualTo("team-a");
+                    assertThat(vault.getAuthMethod())
+                            .isEqualTo(SecretManagerProperties.Vault.AuthMethod.APPROLE);
+                    assertThat(vault.getMount()).isEqualTo("myapp");
+                    assertThat(vault.getKvVersion()).isEqualTo(1);
+                    assertThat(vault.getAppRole().getRoleId()).isEqualTo("rid");
+                    assertThat(vault.getAppRole().getSecretId()).isEqualTo("sid");
+                    assertThat(vault.getAppRole().getPath()).isEqualTo("custom-approle");
+                    assertThat(vault.getKubernetes().getRole()).isEqualTo("myrole");
+                    assertThat(vault.getKubernetes().getPath()).isEqualTo("custom-k8s");
+                    assertThat(vault.getSsl().getCaCertPath()).isEqualTo("/etc/ssl/ca.pem");
+                });
+    }
+
+    @Test
+    void shouldNotChangeDefaultProviderOrderWhenVaultAdded() {
+        contextRunner.run(context -> {
+            SecretManagerProperties properties = context.getBean(SecretManagerProperties.class);
+            // Vault must NOT be in the default provider-order (users opt-in explicitly)
+            assertThat(properties.getProviderOrder()).containsExactly("aws", "gcp", "local");
+            assertThat(properties.getProviderOrder()).doesNotContain("vault");
+        });
+    }
+
+    @Test
     void shouldBindCustomConfiguration() {
         contextRunner
                 .withPropertyValues(

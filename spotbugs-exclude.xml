@@ -20,6 +20,7 @@
             <Class name="io.github.timhwang777.unisecret.provider.AwsSecretProvider"/>
             <Class name="io.github.timhwang777.unisecret.provider.GcpSecretProvider"/>
             <Class name="io.github.timhwang777.unisecret.provider.LocalSecretProvider"/>
+            <Class name="io.github.timhwang777.unisecret.provider.VaultSecretProvider"/>
             <Class name="io.github.timhwang777.unisecret.provider.SecretResolver"/>
             <!-- Service classes storing injected dependencies -->
             <Class name="io.github.timhwang777.unisecret.service.SecretRefreshService"/>
