@@ -62,6 +62,8 @@
 
         <!-- Dependency versions -->
         <caffeine.version>3.2.3</caffeine.version>
+        <spring-vault.version>3.2.0</spring-vault.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <testcontainers.version>1.21.4</testcontainers.version>
 
         <!-- Static Analysis versions -->
@@ -126,7 +128,7 @@
         <dependency>
             <groupId>org.springframework.vault</groupId>
             <artifactId>spring-vault-core</artifactId>
-            <version>3.2.0</version>
+            <version>${spring-vault.version}</version>
         </dependency>
 
         <!-- JSON Processing -->
@@ -181,7 +183,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>4.3.0</version>
+            <version>${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
