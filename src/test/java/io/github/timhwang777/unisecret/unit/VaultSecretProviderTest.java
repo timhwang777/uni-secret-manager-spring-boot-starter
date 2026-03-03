@@ -132,6 +132,23 @@ class VaultSecretProviderTest {
     }
 
     @Test
+    void shouldTreatLatestAliasAsCurrentVersionForKvV2() {
+        Map<String, Object> data = Map.of("value", "current-value");
+        VaultResponse response = new VaultResponse();
+        response.setData(data);
+
+        when(vaultTemplate.opsForKeyValue("secret", KeyValueBackend.KV_2)).thenReturn(kvOps);
+        when(kvOps.get("my-secret")).thenReturn(response);
+
+        Optional<String> result = provider.getSecret("my-secret", "latest");
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).contains("current-value");
+        verify(vaultTemplate).opsForKeyValue("secret", KeyValueBackend.KV_2);
+        verify(vaultTemplate, never()).opsForVersionedKeyValue(anyString());
+    }
+
+    @Test
     void shouldThrowForInvalidVersionNumber() {
         assertThatThrownBy(() -> provider.getSecret("my-secret", "not-a-number"))
                 .isInstanceOf(SecretProviderException.class)

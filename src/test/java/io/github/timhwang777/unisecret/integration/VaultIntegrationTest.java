@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Integration tests for VaultSecretProvider using a real Vault container.
  * Tests KV v2 secret retrieval, versioning, and error handling.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class VaultIntegrationTest {
 
     private static final String VAULT_TOKEN = "test-root-token";
@@ -33,9 +33,7 @@ class VaultIntegrationTest {
 
     @Container
     static final VaultContainer<?> vault = new VaultContainer<>(DockerImageName.parse(VAULT_IMAGE))
-            .withVaultToken(VAULT_TOKEN)
-            .withSecretInVault("secret/my-app", "username=admin", "password=s3cret")
-            .withSecretInVault("secret/single-key", "value=hello");
+            .withVaultToken(VAULT_TOKEN);
 
     private static VaultSecretProvider provider;
     private static VaultTemplate vaultTemplate;
@@ -46,6 +44,9 @@ class VaultIntegrationTest {
         endpoint.setScheme("http");
 
         vaultTemplate = new VaultTemplate(endpoint, new TokenAuthentication(VAULT_TOKEN));
+
+        putSecret("secret/my-app", "username=admin", "password=s3cret");
+        putSecret("secret/single-key", "value=hello");
 
         SecretManagerProperties.Vault vaultProps = new SecretManagerProperties.Vault();
         vaultProps.setEnabled(true);
@@ -59,14 +60,28 @@ class VaultIntegrationTest {
         provider = new VaultSecretProvider(vaultTemplate, vaultProps, new ObjectMapper());
 
         // Write versioned secrets for T008 / versioning tests
-        vault.execInContainer("vault", "kv", "put", "secret/versioned", "val=version-one");
-        vault.execInContainer("vault", "kv", "put", "secret/versioned", "val=version-two");
-        vault.execInContainer("vault", "kv", "put", "secret/versioned", "val=version-three");
+        putSecret("secret/versioned", "val=version-one");
+        putSecret("secret/versioned", "val=version-two");
+        putSecret("secret/versioned", "val=version-three");
     }
 
     @AfterAll
     static void tearDown() {
         // Testcontainers manages container lifecycle; no explicit cleanup needed
+    }
+
+    private static void putSecret(String path, String... keyValues) throws Exception {
+        String[] command = new String[4 + keyValues.length];
+        command[0] = "vault";
+        command[1] = "kv";
+        command[2] = "put";
+        command[3] = path;
+        System.arraycopy(keyValues, 0, command, 4, keyValues.length);
+
+        org.testcontainers.containers.Container.ExecResult result = vault.execInContainer(command);
+        assertThat(result.getExitCode())
+                .as("failed to seed Vault secret at %s, stderr: %s", path, result.getStderr())
+                .isEqualTo(0);
     }
 
     // ==================== T014: KV v2 retrieval ====================
@@ -113,6 +128,14 @@ class VaultIntegrationTest {
     }
 
     @Test
+    void shouldRetrieveLatestVersionWhenLatestAliasIsProvided() {
+        Optional<String> result = provider.getSecret("versioned", "latest");
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).contains("version-three");
+    }
+
+    @Test
     void shouldRetrieveSpecificVersionOne() {
         Optional<String> result = provider.getSecret("versioned", "1");
 
@@ -140,8 +163,14 @@ class VaultIntegrationTest {
     void shouldAuthenticateWithAppRoleAndRetrieveSecret() throws Exception {
         // Enable AppRole auth and create a role in the Vault container
         vault.execInContainer("vault", "auth", "enable", "approle");
-        vault.execInContainer("vault", "policy", "write", "read-secrets",
-                "-", "<< EOF\npath \"secret/*\" { capabilities = [\"read\",\"list\"] }\nEOF");
+        vault.execInContainer(
+                "sh",
+                "-c",
+                "cat >/tmp/read-secrets.hcl <<'EOF'\n"
+                        + "path \"secret/data/*\" { capabilities = [\"read\"] }\n"
+                        + "path \"secret/metadata/*\" { capabilities = [\"read\", \"list\"] }\n"
+                        + "EOF\n"
+                        + "vault policy write read-secrets /tmp/read-secrets.hcl");
         vault.execInContainer("vault", "write", "auth/approle/role/test-role",
                 "token_policies=default,read-secrets");
 

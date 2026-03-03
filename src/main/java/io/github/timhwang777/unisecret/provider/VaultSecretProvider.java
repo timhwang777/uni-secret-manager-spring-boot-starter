@@ -82,7 +82,7 @@ public class VaultSecretProvider implements SecretProvider {
         String mount = properties.getMount();
         Map<String, Object> data;
 
-        if (properties.getKvVersion() == 2 && version != null && !version.isBlank()) {
+        if (properties.getKvVersion() == 2 && hasExplicitVersion(version)) {
             data = fetchVersionedSecret(key, version, mount);
         } else {
             data = fetchLatestSecret(key, version, mount);
@@ -97,10 +97,18 @@ public class VaultSecretProvider implements SecretProvider {
         return Optional.of(objectMapper.writeValueAsString(data));
     }
 
+    private boolean hasExplicitVersion(String version) {
+        if (version == null || version.isBlank()) {
+            return false;
+        }
+        return !"latest".equalsIgnoreCase(version.trim());
+    }
+
     private Map<String, Object> fetchVersionedSecret(String key, String version, String mount) {
+        String normalizedVersion = version == null ? null : version.trim();
         int versionNumber;
         try {
-            versionNumber = Integer.parseInt(version);
+            versionNumber = Integer.parseInt(normalizedVersion);
         } catch (NumberFormatException e) {
             throw new SecretProviderException("Invalid Vault version number: " + version, e, false);
         }

@@ -6,9 +6,9 @@ import io.github.timhwang777.unisecret.provider.ProviderType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -23,20 +23,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration test for AwsSecretProvider using LocalStack.
  */
-@Testcontainers
 class AwsIntegrationTest {
 
     private static final DockerImageName LOCALSTACK_IMAGE = DockerImageName.parse("localstack/localstack:3.0");
 
-    @Container
-    private static final LocalStackContainer localstack = new LocalStackContainer(LOCALSTACK_IMAGE)
-            .withServices(LocalStackContainer.Service.SECRETSMANAGER);
+    private static LocalStackContainer localstack;
 
     private static SecretsManagerClient client;
     private static AwsSecretProvider provider;
 
     @BeforeAll
     static void setUp() {
+        Assumptions.assumeTrue(
+                DockerClientFactory.instance().isDockerAvailable(),
+                "Docker is not available; skipping LocalStack integration tests");
+
+        localstack = new LocalStackContainer(LOCALSTACK_IMAGE)
+                .withServices(LocalStackContainer.Service.SECRETSMANAGER);
+        localstack.start();
+
         // Create AWS Secrets Manager client pointing to LocalStack
         client = SecretsManagerClient.builder()
                 .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.SECRETSMANAGER))
@@ -74,6 +79,9 @@ class AwsIntegrationTest {
     static void tearDown() {
         if (client != null) {
             client.close();
+        }
+        if (localstack != null) {
+            localstack.stop();
         }
     }
 

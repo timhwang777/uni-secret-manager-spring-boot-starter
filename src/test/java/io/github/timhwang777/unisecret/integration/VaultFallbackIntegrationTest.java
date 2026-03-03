@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for the Vault provider in the fallback chain.
  * Verifies that secrets are resolved from Vault first and Local as fallback.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class VaultFallbackIntegrationTest {
 
     private static final String VAULT_TOKEN = "fallback-test-token";
@@ -26,17 +26,18 @@ class VaultFallbackIntegrationTest {
 
     @Container
     static final VaultContainer<?> vault = new VaultContainer<>(DockerImageName.parse(VAULT_IMAGE))
-            .withVaultToken(VAULT_TOKEN)
-            .withSecretInVault("secret/vault-only-secret", "value=from-vault")
-            .withSecretInVault("secret/shared-secret", "value=vault-value");
+            .withVaultToken(VAULT_TOKEN);
 
     private static String vaultHost;
     private static int vaultPort;
 
     @BeforeAll
-    static void setUp() {
+    static void setUp() throws Exception {
         vaultHost = vault.getHost();
         vaultPort = vault.getMappedPort(8200);
+
+        putSecret("secret/vault-only-secret", "value=from-vault");
+        putSecret("secret/shared-secret", "value=vault-value");
     }
 
     @AfterAll
@@ -50,7 +51,8 @@ class VaultFallbackIntegrationTest {
                 .withPropertyValues(
                         "secrets.enabled=true",
                         "secrets.fail-on-missing=false",
-                        "secrets.provider-order=vault,local",
+                        "secrets.provider-order[0]=vault",
+                        "secrets.provider-order[1]=local",
                         "secrets.vault.enabled=true",
                         "secrets.vault.host=" + vaultHost,
                         "secrets.vault.port=" + vaultPort,
@@ -63,6 +65,20 @@ class VaultFallbackIntegrationTest {
                         "secrets.local.secrets.local-only-secret=from-local",
                         "secrets.local.secrets.shared-secret=local-value"
                 );
+    }
+
+    private static void putSecret(String path, String... keyValues) throws Exception {
+        String[] command = new String[4 + keyValues.length];
+        command[0] = "vault";
+        command[1] = "kv";
+        command[2] = "put";
+        command[3] = path;
+        System.arraycopy(keyValues, 0, command, 4, keyValues.length);
+
+        org.testcontainers.containers.Container.ExecResult result = vault.execInContainer(command);
+        assertThat(result.getExitCode())
+                .as("failed to seed Vault secret at %s, stderr: %s", path, result.getStderr())
+                .isEqualTo(0);
     }
 
     @Test

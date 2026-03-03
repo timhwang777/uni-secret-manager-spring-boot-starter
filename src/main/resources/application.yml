@@ -78,20 +78,20 @@ secrets:
     # kv-version: 2           # 1 or 2 (default: 2)
 
     # AppRole auth (used when auth-method: APPROLE)
-    app-role:
-      # role-id: ${VAULT_ROLE_ID}
-      # secret-id: ${VAULT_SECRET_ID}
-      # path: approle
+    # app-role:
+    #   role-id: ${VAULT_ROLE_ID}
+    #   secret-id: ${VAULT_SECRET_ID}
+    #   path: approle
 
     # Kubernetes auth (used when auth-method: KUBERNETES)
-    kubernetes:
-      # role: my-app-role
-      # service-account-token-path: /var/run/secrets/kubernetes.io/serviceaccount/token
-      # path: kubernetes
+    # kubernetes:
+    #   role: my-app-role
+    #   service-account-token-path: /var/run/secrets/kubernetes.io/serviceaccount/token
+    #   path: kubernetes
 
     # TLS configuration
-    ssl:
-      # ca-cert-path: /etc/ssl/vault-ca.pem   # PEM CA cert for self-signed certs
+    # ssl:
+    #   ca-cert-path: /etc/ssl/vault-ca.pem   # PEM CA cert for self-signed certs
 
   # ============================================
   # Local Provider Configuration
@@ -103,14 +103,14 @@ secrets:
 
     # Define secrets as key-value pairs
     # Supports both simple strings and JSON values
-    secrets:
-      # Simple string secrets
-      # database-password: dev-password-123
-      # api-key: dev-api-key-xyz
-
-      # JSON secrets (for field extraction with @SecretValue(field = "..."))
-      # api-config: '{"apiKey": "dev-key", "apiSecret": "dev-secret", "endpoint": "https://api.dev.example.com"}'
-      # database-config: '{"host": "localhost", "port": 5432, "username": "dev", "password": "dev-pass"}'
+    # secrets:
+    #   # Simple string secrets
+    #   # database-password: dev-password-123
+    #   # api-key: dev-api-key-xyz
+    #
+    #   # JSON secrets (for field extraction with @SecretValue(field = "..."))
+    #   # api-config: '{"apiKey": "dev-key", "apiSecret": "dev-secret", "endpoint": "https://api.dev.example.com"}'
+    #   # database-config: '{"host": "localhost", "port": 5432, "username": "dev", "password": "dev-pass"}'
 
   # ============================================
   # Cache Configuration
