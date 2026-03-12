@@ -47,7 +47,7 @@ import java.util.function.Supplier;
  *     max-delay: 10s         # Never wait more than 10 seconds
  * }</pre>
  *
- * @see SecretProviderException#isRetryable()
+ * @see io.github.timhwang777.unisecret.exception.SecretProviderException#retryable
  */
 @Slf4j
 public class RetryHelper {

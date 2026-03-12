@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
  *    └────┬────┘        └─────┬─────┘      └──────┬──────┘
  *         │                   │                   │
  *   Extract JSON      Try next provider    Log and continue
- *   Cache & return
+ *   Cache &amp; return
  * </pre>
  *
  * <h2>Usage Examples</h2>
