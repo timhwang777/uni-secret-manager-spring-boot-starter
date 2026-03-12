@@ -34,7 +34,9 @@ jobs:
           echo "Setting version to $VERSION"
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
 
+      # Uses the 'github' Maven profile defined in pom.xml for distributionManagement.
+      # See pom.xml <profiles> section for all available publish targets.
       - name: Publish to GitHub Packages
-        run: mvn deploy --batch-mode --no-transfer-progress -DskipTests
+        run: mvn deploy -Pgithub --batch-mode --no-transfer-progress -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

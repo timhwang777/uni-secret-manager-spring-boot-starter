@@ -6,40 +6,41 @@ This guide covers how to publish your Maven project (`uni-secret-manager-spring-
 
 1. [Publishing Options Overview](#publishing-options-overview)
 2. [Pre-Publication Checklist](#pre-publication-checklist)
-3. [Option A: GitHub Packages](#option-a-github-packages-recommended-for-getting-started)
-4. [Option B: Maven Central](#option-b-maven-central-recommended-for-public-libraries)
-5. [GPG Signing Setup](#gpg-signing-setup)
-6. [GitHub Actions CI/CD](#github-actions-cicd)
-7. [Version Management](#version-management)
-8. [Troubleshooting](#troubleshooting)
+3. [Option A: JitPack](#option-a-jitpack-recommended-for-team-use)
+4. [Option B: GitHub Packages](#option-b-github-packages)
+5. [Option C: Maven Central](#option-c-maven-central-recommended-for-public-libraries)
+6. [Maven Profiles](#maven-profiles)
+7. [GPG Signing Setup](#gpg-signing-setup)
+8. [GitHub Actions CI/CD](#github-actions-cicd)
+9. [Version Management](#version-management)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Publishing Options Overview
 
-| Feature | GitHub Packages | Maven Central |
-|---------|-----------------|---------------|
-| **Ease of Setup** | Easy | Moderate to Complex |
-| **Audience** | Private/Organization | Public/Global |
-| **Consumer Authentication** | **Required** (GitHub token) | **Not required** |
-| **Cost** | Free for public repos | Free |
-| **Discovery** | Limited | High (search.maven.org) |
-| **Best For** | Internal libraries, testing | Open-source libraries |
+| Feature | JitPack | GitHub Packages | Maven Central |
+|---------|---------|-----------------|---------------|
+| **Ease of Setup** | Minimal | Easy | Moderate to Complex |
+| **Consumer Authentication** | **Not required** | **Required** (GitHub token) | **Not required** |
+| **Publisher Setup** | None (builds from repo) | GitHub Actions | Sonatype + GPG signing |
+| **Cost** | Free for public repos | Free for public repos | Free |
+| **Discovery** | jitpack.io | Limited | High (search.maven.org) |
+| **Best For** | Team/internal use | Organization-scoped | Public open-source |
+| **GroupId** | `com.github.<user>` | Your own (e.g., `io.github.*`) | Your own (verified) |
 
-> **Important: Consumer Experience Difference**
+> **Consumer Experience Comparison**
 >
-> This is the key distinction between the two options:
->
-> - **GitHub Packages**: Even for public repositories, anyone who wants to use your library must:
->   1. Have a GitHub account
->   2. Create a Personal Access Token with `read:packages` scope
->   3. Configure their `~/.m2/settings.xml` with credentials
->
-> - **Maven Central**: Anyone can use your library by simply adding a dependency to their `pom.xml`. No account or authentication needed.
->
-> If you want your library to be easily consumable by the public, **Maven Central is the better choice**. GitHub Packages adds friction that may discourage adoption.
+> - **JitPack**: Consumer adds a repository + dependency to `pom.xml`. No accounts or tokens needed. Builds directly from your GitHub repo on first request.
+> - **GitHub Packages**: Consumer must have a GitHub account, create a PAT with `read:packages` scope, and configure `~/.m2/settings.xml`.
+> - **Maven Central**: Consumer just adds the dependency — no extra repository or auth. The standard for public libraries.
 
-**Recommendation**: Use GitHub Packages for internal/team libraries or to test your publishing workflow. Use Maven Central for public open-source libraries where ease of adoption matters.
+**Recommendation**: Use **JitPack** for team/internal distribution (zero friction). Use **Maven Central** when publishing for broad public adoption. Keep **GitHub Packages** as an additional channel if your organization already uses it.
+
+### How Publishing Targets Are Managed
+
+This project uses **Maven profiles** to support multiple publishing targets from a single `pom.xml`.
+See the [Maven Profiles](#maven-profiles) section for details.
 
 ---
 
@@ -166,28 +167,123 @@ Before publishing:
 
 ---
 
-## Option A: GitHub Packages (Recommended for Getting Started)
+## Option A: JitPack (Recommended for Team Use)
 
-GitHub Packages is the easiest way to publish Maven artifacts. Perfect for:
-- Testing your publishing workflow
-- Internal/organizational libraries
-- Early-stage projects
+JitPack builds and serves Maven artifacts directly from your public GitHub repository.
+There is no publishing step — JitPack builds on first consumer request and caches the result.
 
-> **Limitation**: GitHub Packages requires authentication for consumers, even for public repositories. See [Consumer Setup Requirements](#consumer-setup-requirements-for-github-packages) below.
+### How JitPack Works
 
-### Step 1: Configure Distribution Management
+1. You push a git tag (e.g., `v1.0.0`) to GitHub
+2. A consumer adds the JitPack repository and dependency to their `pom.xml`
+3. On first dependency resolution, JitPack clones your repo and runs `mvn install`
+4. The built artifact is cached and served for all subsequent requests
+5. Build logs are available at `https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot-starter`
 
-Add to your `pom.xml`:
+### Project Configuration
+
+JitPack reads `jitpack.yml` in the project root to customize the build environment:
+
+```yaml
+# jitpack.yml
+jdk:
+  - openjdk21
+
+install:
+  - mvn install -DskipTests -Djacoco.skip=true --batch-mode
+```
+
+- **JDK 21**: JitPack defaults to JDK 8; this override is required for our project.
+- **Skip tests**: JitPack does not provide Docker, so Testcontainers-based integration tests cannot run.
+- **Skip JaCoCo**: Coverage checks fail with 0% when tests are skipped.
+
+No changes to `pom.xml` are needed for JitPack — it uses `mvn install`, which does not
+require `distributionManagement`.
+
+### Consumer Setup
+
+Consumers only need to add the following to their `pom.xml` — no tokens, no `settings.xml`:
 
 ```xml
-<distributionManagement>
-    <repository>
-        <id>github</id>
-        <name>GitHub Packages</name>
-        <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring</url>
-    </repository>
-</distributionManagement>
+<repositories>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.github.timhwang777</groupId>
+  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
+  <version>v1.0.0</version>
+</dependency>
 ```
+
+> **Note**: The groupId for JitPack is `com.github.timhwang777`, not `io.github.timhwang777`.
+> This is a JitPack convention — the groupId is derived from the GitHub repository owner.
+
+### Available Versions on JitPack
+
+JitPack supports several version formats:
+
+| Version Format | Example | Description |
+|---------------|---------|-------------|
+| Release tag | `v1.0.0` | Recommended for production |
+| Commit hash | `a1b2c3d` | Specific commit (for testing) |
+| Branch-SNAPSHOT | `main-SNAPSHOT` | Latest commit on a branch |
+
+### Triggering a JitPack Build
+
+```bash
+# 1. Ensure everything passes locally
+mvn clean verify
+
+# 2. Tag a release
+git tag v1.0.0
+git push origin v1.0.0
+
+# 3. (Optional) Verify the build at:
+#    https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot-starter/v1.0.0
+```
+
+The first consumer request for this version triggers the build. You can also
+pre-trigger it by visiting the JitPack URL above.
+
+### JitPack Troubleshooting
+
+- **Build fails on JitPack**: Check build logs at `https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot-starter`
+- **First resolution is slow**: JitPack builds on demand; the first request takes 1-3 minutes. Subsequent requests are cached.
+- **Wrong JDK version**: Verify `jitpack.yml` exists in the tagged commit and specifies `openjdk21`.
+
+---
+
+## Option B: GitHub Packages
+
+GitHub Packages is integrated with GitHub Actions and supports organization-scoped access.
+
+> **Limitation**: GitHub Packages requires authentication for consumers, even for public repositories. See [Consumer Setup Requirements](#consumer-setup-requirements-for-github-packages) below.
+> Consider using [JitPack](#option-a-jitpack-recommended-for-team-use) if token-free access is preferred.
+
+### Step 1: Maven Profile Configuration
+
+GitHub Packages distribution is configured via the `github` Maven profile in `pom.xml`:
+
+```xml
+<profiles>
+    <profile>
+        <id>github</id>
+        <distributionManagement>
+            <repository>
+                <id>github</id>
+                <name>GitHub Packages</name>
+                <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
+            </repository>
+        </distributionManagement>
+    </profile>
+</profiles>
+```
+
+Deploy with: `mvn deploy -Pgithub`
 
 ### Step 2: Configure Maven Settings
 
@@ -285,7 +381,7 @@ Others can use your package, but they must complete additional setup first.
 
 ---
 
-## Option B: Maven Central (Recommended for Public Libraries)
+## Option C: Maven Central (Recommended for Public Libraries)
 
 Maven Central is the primary repository for Java artifacts. Publishing here makes your library available to everyone without authentication.
 
@@ -384,6 +480,55 @@ mvn deploy
 2. Check "Deployments" for your upload
 3. If `autoPublish` is false, manually publish the deployment
 4. Wait for sync to [search.maven.org](https://search.maven.org/) (can take up to 2 hours)
+
+---
+
+## Maven Profiles
+
+This project uses Maven profiles to manage multiple publishing targets from a single
+`pom.xml`. Profiles keep `distributionManagement` and target-specific plugins separated,
+so the default build remains clean for local development and JitPack.
+
+### Profile Summary
+
+| Profile | Purpose | Activation |
+|---------|---------|------------|
+| *(none)* | Local development + JitPack | Default (`mvn verify`, `mvn install`) |
+| `github` | Publish to GitHub Packages | `mvn deploy -Pgithub` (used by `publish.yml`) |
+| `maven-central` | Publish to Maven Central | `mvn deploy -Pmaven-central` (future) |
+
+### Why Profiles?
+
+Without profiles, `distributionManagement` is always active. This means:
+- `mvn deploy` without a profile would fail or target the wrong registry
+- Adding Maven Central later would conflict with the GitHub Packages config
+- JitPack uses `mvn install` (not `deploy`), so profiles don't affect it at all
+
+With profiles, each `mvn deploy -P<target>` activates only the relevant configuration.
+
+### Profile Definitions in `pom.xml`
+
+```xml
+<profiles>
+    <!-- GitHub Packages: activated by publish.yml on tag push -->
+    <profile>
+        <id>github</id>
+        <distributionManagement>
+            <repository>
+                <id>github</id>
+                <name>GitHub Packages</name>
+                <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
+            </repository>
+        </distributionManagement>
+    </profile>
+
+    <!-- Maven Central: placeholder for future publishing setup -->
+    <profile>
+        <id>maven-central</id>
+        <!-- TODO: Add Central Publishing Plugin and GPG signing -->
+    </profile>
+</profiles>
+```
 
 ---
 
@@ -511,7 +656,7 @@ jobs:
           server-id: github
 
       - name: Publish to GitHub Packages
-        run: mvn --batch-mode deploy
+        run: mvn --batch-mode deploy -Pgithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

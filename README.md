@@ -22,36 +22,38 @@ Spring Boot starter for retrieving secrets from multiple backends (AWS Secrets M
 
 ## Installation
 
-This project is configured to publish artifacts to GitHub Packages.
+### Option A: JitPack (Recommended)
 
-### 1. Configure GitHub credentials (`~/.m2/settings.xml`)
+JitPack builds and serves Maven artifacts directly from this GitHub repository.
+No authentication or tokens required.
 
-```xml
-<settings>
-  <servers>
-    <server>
-      <id>github</id>
-      <username>YOUR_GITHUB_USERNAME</username>
-      <password>YOUR_GITHUB_PAT</password>
-    </server>
-  </servers>
-</settings>
-```
-
-PAT scope needed for consumption: `read:packages`.
-
-### 2. Add GitHub Packages repository in your app `pom.xml`
+**1. Add the JitPack repository to your `pom.xml`:**
 
 ```xml
 <repositories>
   <repository>
-    <id>github</id>
-    <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
   </repository>
 </repositories>
 ```
 
-### 3. Add dependency
+**2. Add the dependency:**
+
+```xml
+<dependency>
+  <groupId>com.github.timhwang777</groupId>
+  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
+  <version>v1.0.0</version>
+</dependency>
+```
+
+Replace `v1.0.0` with the latest [release tag](https://github.com/timhwang777/uni-secret-manager-spring-boot-starter/tags).
+
+### Option B: GitHub Packages
+
+GitHub Packages requires a GitHub account and a Personal Access Token with `read:packages` scope.
+See [docs/PUBLISHING_GUIDE.md](docs/PUBLISHING_GUIDE.md#option-a-github-packages) for full setup instructions.
 
 ```xml
 <dependency>
@@ -60,8 +62,6 @@ PAT scope needed for consumption: `read:packages`.
   <version>1.0.0</version>
 </dependency>
 ```
-
-Use the latest published tag version from this repository.
 
 ## Quick Start (Local Provider)
 

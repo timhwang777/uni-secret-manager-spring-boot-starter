@@ -42,13 +42,12 @@
         <url>https://github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
     </scm>
 
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
-        </repository>
-    </distributionManagement>
+    <!--
+        Distribution is managed via Maven profiles to support multiple publish targets:
+        - JitPack: No profile needed; JitPack runs 'mvn install' (see jitpack.yml)
+        - GitHub Packages: mvn deploy -Pgithub
+        - Maven Central: mvn deploy -Pmaven-central (future)
+    -->
 
     <properties>
         <java.version>21</java.version>
@@ -331,4 +330,29 @@
             </plugin>
         </plugins>
     </build>
+
+    <!--
+        Publishing profiles: activate with -P<profile-id> during 'mvn deploy'.
+        JitPack does not use 'deploy', so no profile is needed for it.
+    -->
+    <profiles>
+        <!-- GitHub Packages: activated by publish.yml on tag push -->
+        <profile>
+            <id>github</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+
+        <!-- Maven Central: placeholder for future publishing setup -->
+        <!-- Requires: Sonatype account, GPG signing, namespace verification -->
+        <profile>
+            <id>maven-central</id>
+            <!-- TODO: Add Maven Central distributionManagement and signing plugins -->
+        </profile>
+    </profiles>
 </project>

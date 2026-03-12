@@ -1,0 +1,13 @@
+# JitPack build configuration
+# JitPack uses this file to customize the build environment.
+# See: https://jitpack.io/docs/BUILDING/
+
+# JitPack defaults to JDK 8; this project requires JDK 21.
+jdk:
+  - openjdk21
+
+# Skip tests during JitPack builds — integration tests require Docker
+# (Testcontainers) which is not available in the JitPack build environment.
+# Also skip JaCoCo coverage checks (-Djacoco.skip) since no tests are executed.
+install:
+  - mvn install -DskipTests -Djacoco.skip=true --batch-mode

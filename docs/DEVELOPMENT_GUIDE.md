@@ -25,6 +25,9 @@ This guide covers the tools, workflows, and best practices for developing the Un
 | **JUnit 5** | Unit testing framework |
 | **Testcontainers** | Integration testing with Docker |
 | **Lombok** | Reduces boilerplate code |
+| **Checkstyle** | Code style enforcement |
+| **SpotBugs** | Static analysis / security checks |
+| **JitPack** | Token-free artifact distribution via GitHub |
 
 ---
 
@@ -250,9 +253,10 @@ mvn clean verify
 
 This runs:
 1. Compiles code
-2. Runs all tests
-3. Checks coverage >= 80%
-4. Fails if any step fails
+2. Runs all tests (unit + integration)
+3. Runs Checkstyle and SpotBugs static analysis
+4. Checks JaCoCo coverage >= 80%
+5. Fails if any step fails
 
 ### Workflow 3: Debugging a Failing Test
 
@@ -279,6 +283,84 @@ mvn package
 
 ---
 
+## Publishing Workflows
+
+This project supports multiple publishing targets via Maven profiles. All workflows
+use standard `mvn` commands — no Makefile or wrapper scripts needed.
+
+| Workflow | Command | Who Runs It |
+|----------|---------|-------------|
+| **Development** | `mvn verify` | Developer locally |
+| **JitPack** | `mvn install -DskipTests -Djacoco.skip=true` | JitPack (via `jitpack.yml`) |
+| **GitHub Packages** | `mvn deploy -Pgithub` | CI (via `publish.yml` on tag push) |
+| **Maven Central** | `mvn deploy -Pmaven-central` | CI (future) |
+
+### JitPack (Token-Free Distribution)
+
+JitPack builds artifacts directly from this GitHub repository. No publishing step is
+needed from the developer — JitPack triggers automatically when a consumer first
+requests a version.
+
+**How it works:**
+
+1. Developer pushes a git tag (e.g., `v1.0.0`)
+2. Consumer adds JitPack repository + dependency to their `pom.xml`
+3. On first resolution, JitPack clones the repo and runs `mvn install`
+4. The built artifact is cached and served for all subsequent requests
+
+**Build configuration** is defined in `jitpack.yml` at the project root:
+- Uses JDK 21 (JitPack defaults to JDK 8)
+- Skips tests and JaCoCo (no Docker/Testcontainers available on JitPack)
+
+**Consumer setup** — no tokens, no `settings.xml`, just add to `pom.xml`:
+
+```xml
+<repositories>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.github.timhwang777</groupId>
+  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
+  <version>v1.0.0</version>
+</dependency>
+```
+
+### GitHub Packages
+
+Published automatically by `.github/workflows/publish.yml` when a tag matching `v*`
+is pushed. Uses the `github` Maven profile defined in `pom.xml`.
+
+Consumers must configure a GitHub PAT with `read:packages` scope.
+See [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md) for full details.
+
+### Maven Central (Future)
+
+A placeholder `maven-central` Maven profile exists in `pom.xml`.
+When ready, this will require Sonatype account setup, GPG signing, and namespace
+verification. See [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md#option-b-maven-central-recommended-for-public-libraries) for the full guide.
+
+### Maven Profiles
+
+Publishing targets are managed via Maven profiles in `pom.xml` to keep concerns
+separated. The default build (no profile) works for local development and JitPack.
+
+```bash
+# Development (no profile needed)
+mvn verify
+
+# Publish to GitHub Packages
+mvn deploy -Pgithub
+
+# Publish to Maven Central (future)
+mvn deploy -Pmaven-central
+```
+
+---
+
 ## Quick Reference
 
 | Task | Command |
@@ -293,6 +375,8 @@ mvn package
 | Start fresh | `mvn clean` |
 | See dependencies | `mvn dependency:tree` |
 | Check for updates | `mvn versions:display-dependency-updates` |
+| Deploy to GitHub Packages | `mvn deploy -Pgithub` |
+| Deploy to Maven Central | `mvn deploy -Pmaven-central` (future) |
 
 ---
 
