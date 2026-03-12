@@ -28,223 +28,223 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Testcontainers(disabledWithoutDocker = true)
 class VaultIntegrationTest {
 
-    private static final String VAULT_TOKEN = "test-root-token";
-    private static final String VAULT_IMAGE = "hashicorp/vault:1.16.3";
+        private static final String VAULT_TOKEN = "test-root-token";
+        private static final String VAULT_IMAGE = "hashicorp/vault:1.16.3";
 
-    @Container
-    static final VaultContainer<?> vault = new VaultContainer<>(DockerImageName.parse(VAULT_IMAGE))
-            .withVaultToken(VAULT_TOKEN);
+        @Container
+        static final VaultContainer<?> vault = new VaultContainer<>(DockerImageName.parse(VAULT_IMAGE))
+                        .withVaultToken(VAULT_TOKEN);
 
-    private static VaultSecretProvider provider;
-    private static VaultTemplate vaultTemplate;
+        private static VaultSecretProvider provider;
+        private static VaultTemplate vaultTemplate;
 
-    @BeforeAll
-    static void setUp() throws Exception {
-        VaultEndpoint endpoint = VaultEndpoint.create(vault.getHost(), vault.getMappedPort(8200));
-        endpoint.setScheme("http");
+        @BeforeAll
+        static void setUp() throws Exception {
+                VaultEndpoint endpoint = VaultEndpoint.create(vault.getHost(), vault.getMappedPort(8200));
+                endpoint.setScheme("http");
 
-        vaultTemplate = new VaultTemplate(endpoint, new TokenAuthentication(VAULT_TOKEN));
+                vaultTemplate = new VaultTemplate(endpoint, new TokenAuthentication(VAULT_TOKEN));
 
-        putSecret("secret/my-app", "username=admin", "password=s3cret");
-        putSecret("secret/single-key", "value=hello");
+                putSecret("secret/my-app", "username=admin", "password=s3cret");
+                putSecret("secret/single-key", "value=hello");
 
-        SecretManagerProperties.Vault vaultProps = new SecretManagerProperties.Vault();
-        vaultProps.setEnabled(true);
-        vaultProps.setHost(vault.getHost());
-        vaultProps.setPort(vault.getMappedPort(8200));
-        vaultProps.setScheme("http");
-        vaultProps.setToken(VAULT_TOKEN);
-        vaultProps.setMount("secret");
-        vaultProps.setKvVersion(2);
+                SecretManagerProperties.Vault vaultProps = new SecretManagerProperties.Vault();
+                vaultProps.setEnabled(true);
+                vaultProps.setHost(vault.getHost());
+                vaultProps.setPort(vault.getMappedPort(8200));
+                vaultProps.setScheme("http");
+                vaultProps.setToken(VAULT_TOKEN);
+                vaultProps.setMount("secret");
+                vaultProps.setKvVersion(2);
 
-        provider = new VaultSecretProvider(vaultTemplate, vaultProps, new ObjectMapper());
+                provider = new VaultSecretProvider(vaultTemplate, vaultProps, new ObjectMapper());
 
-        // Write versioned secrets for T008 / versioning tests
-        putSecret("secret/versioned", "val=version-one");
-        putSecret("secret/versioned", "val=version-two");
-        putSecret("secret/versioned", "val=version-three");
-    }
+                // Write versioned secrets for T008 / versioning tests
+                putSecret("secret/versioned", "val=version-one");
+                putSecret("secret/versioned", "val=version-two");
+                putSecret("secret/versioned", "val=version-three");
+        }
 
-    @AfterAll
-    static void tearDown() {
-        // Testcontainers manages container lifecycle; no explicit cleanup needed
-    }
+        @AfterAll
+        static void tearDown() {
+                // Testcontainers manages container lifecycle; no explicit cleanup needed
+        }
 
-    private static void putSecret(String path, String... keyValues) throws Exception {
-        String[] command = new String[4 + keyValues.length];
-        command[0] = "vault";
-        command[1] = "kv";
-        command[2] = "put";
-        command[3] = path;
-        System.arraycopy(keyValues, 0, command, 4, keyValues.length);
+        private static void putSecret(String path, String... keyValues) throws Exception {
+                String[] command = new String[4 + keyValues.length];
+                command[0] = "vault";
+                command[1] = "kv";
+                command[2] = "put";
+                command[3] = path;
+                System.arraycopy(keyValues, 0, command, 4, keyValues.length);
 
-        org.testcontainers.containers.Container.ExecResult result = vault.execInContainer(command);
-        assertThat(result.getExitCode())
-                .as("failed to seed Vault secret at %s, stderr: %s", path, result.getStderr())
-                .isEqualTo(0);
-    }
+                org.testcontainers.containers.Container.ExecResult result = vault.execInContainer(command);
+                assertThat(result.getExitCode())
+                                .as("failed to seed Vault secret at %s, stderr: %s", path, result.getStderr())
+                                .isEqualTo(0);
+        }
 
-    // ==================== T014: KV v2 retrieval ====================
+        // ==================== T014: KV v2 retrieval ====================
 
-    @Test
-    void shouldRetrieveSecretAsJsonFromKvV2() throws Exception {
-        Optional<String> result = provider.getSecret("my-app");
+        @Test
+        void shouldRetrieveSecretAsJsonFromKvV2() throws Exception {
+                Optional<String> result = provider.getSecret("my-app");
 
-        assertThat(result).isPresent();
-        String json = result.get();
-        assertThat(json).contains("username");
-        assertThat(json).contains("admin");
-        assertThat(json).contains("password");
-        assertThat(json).contains("s3cret");
+                assertThat(result).isPresent();
+                String json = result.get();
+                assertThat(json).contains("username");
+                assertThat(json).contains("admin");
+                assertThat(json).contains("password");
+                assertThat(json).contains("s3cret");
 
-        // Verify it is valid JSON
-        new ObjectMapper().readTree(json);
-    }
+                // Verify it is valid JSON
+                new ObjectMapper().readTree(json);
+        }
 
-    @Test
-    void shouldReturnEmptyForNonExistentSecret() {
-        Optional<String> result = provider.getSecret("does-not-exist");
-        assertThat(result).isEmpty();
-    }
+        @Test
+        void shouldReturnEmptyForNonExistentSecret() {
+                Optional<String> result = provider.getSecret("does-not-exist");
+                assertThat(result).isEmpty();
+        }
 
-    @Test
-    void shouldReturnCorrectProviderType() {
-        assertThat(provider.getProviderType()).isEqualTo(ProviderType.VAULT);
-    }
+        @Test
+        void shouldReturnCorrectProviderType() {
+                assertThat(provider.getProviderType()).isEqualTo(ProviderType.VAULT);
+        }
 
-    @Test
-    void shouldBeEnabled() {
-        assertThat(provider.isEnabled()).isTrue();
-    }
+        @Test
+        void shouldBeEnabled() {
+                assertThat(provider.isEnabled()).isTrue();
+        }
 
-    // ==================== Versioning tests ====================
+        // ==================== Versioning tests ====================
 
-    @Test
-    void shouldRetrieveLatestVersionByDefault() {
-        Optional<String> result = provider.getSecret("versioned");
+        @Test
+        void shouldRetrieveLatestVersionByDefault() {
+                Optional<String> result = provider.getSecret("versioned");
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).contains("version-three");
-    }
+                assertThat(result).isPresent();
+                assertThat(result.get()).contains("version-three");
+        }
 
-    @Test
-    void shouldRetrieveLatestVersionWhenLatestAliasIsProvided() {
-        Optional<String> result = provider.getSecret("versioned", "latest");
+        @Test
+        void shouldRetrieveLatestVersionWhenLatestAliasIsProvided() {
+                Optional<String> result = provider.getSecret("versioned", "latest");
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).contains("version-three");
-    }
+                assertThat(result).isPresent();
+                assertThat(result.get()).contains("version-three");
+        }
 
-    @Test
-    void shouldRetrieveSpecificVersionOne() {
-        Optional<String> result = provider.getSecret("versioned", "1");
+        @Test
+        void shouldRetrieveSpecificVersionOne() {
+                Optional<String> result = provider.getSecret("versioned", "1");
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).contains("version-one");
-    }
+                assertThat(result).isPresent();
+                assertThat(result.get()).contains("version-one");
+        }
 
-    @Test
-    void shouldRetrieveSpecificVersionTwo() {
-        Optional<String> result = provider.getSecret("versioned", "2");
+        @Test
+        void shouldRetrieveSpecificVersionTwo() {
+                Optional<String> result = provider.getSecret("versioned", "2");
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).contains("version-two");
-    }
+                assertThat(result).isPresent();
+                assertThat(result.get()).contains("version-two");
+        }
 
-    @Test
-    void shouldReturnEmptyForNonExistentVersion() {
-        Optional<String> result = provider.getSecret("versioned", "999");
-        assertThat(result).isEmpty();
-    }
+        @Test
+        void shouldReturnEmptyForNonExistentVersion() {
+                Optional<String> result = provider.getSecret("versioned", "999");
+                assertThat(result).isEmpty();
+        }
 
-    // ==================== T022: AppRole authentication ====================
+        // ==================== T022: AppRole authentication ====================
 
-    @Test
-    void shouldAuthenticateWithAppRoleAndRetrieveSecret() throws Exception {
-        // Enable AppRole auth and create a role in the Vault container
-        vault.execInContainer("vault", "auth", "enable", "approle");
-        vault.execInContainer(
-                "sh",
-                "-c",
-                "cat >/tmp/read-secrets.hcl <<'EOF'\n"
-                        + "path \"secret/data/*\" { capabilities = [\"read\"] }\n"
-                        + "path \"secret/metadata/*\" { capabilities = [\"read\", \"list\"] }\n"
-                        + "EOF\n"
-                        + "vault policy write read-secrets /tmp/read-secrets.hcl");
-        vault.execInContainer("vault", "write", "auth/approle/role/test-role",
-                "token_policies=default,read-secrets");
+        @Test
+        void shouldAuthenticateWithAppRoleAndRetrieveSecret() throws Exception {
+                // Enable AppRole auth and create a role in the Vault container
+                vault.execInContainer("vault", "auth", "enable", "approle");
+                vault.execInContainer(
+                                "sh",
+                                "-c",
+                                "cat >/tmp/read-secrets.hcl <<'EOF'\n"
+                                                + "path \"secret/data/*\" { capabilities = [\"read\"] }\n"
+                                                + "path \"secret/metadata/*\" { capabilities = [\"read\", \"list\"] }\n"
+                                                + "EOF\n"
+                                                + "vault policy write read-secrets /tmp/read-secrets.hcl");
+                vault.execInContainer("vault", "write", "auth/approle/role/test-role",
+                                "token_policies=default,read-secrets");
 
-        var roleIdResult = vault.execInContainer("vault", "read",
-                "-field=role_id", "auth/approle/role/test-role/role-id");
-        var secretIdResult = vault.execInContainer("vault", "write",
-                "-f", "-field=secret_id", "auth/approle/role/test-role/secret-id");
+                var roleIdResult = vault.execInContainer("vault", "read",
+                                "-field=role_id", "auth/approle/role/test-role/role-id");
+                var secretIdResult = vault.execInContainer("vault", "write",
+                                "-f", "-field=secret_id", "auth/approle/role/test-role/secret-id");
 
-        String roleId = roleIdResult.getStdout().trim();
-        String secretId = secretIdResult.getStdout().trim();
+                String roleId = roleIdResult.getStdout().trim();
+                String secretId = secretIdResult.getStdout().trim();
 
-        assertThat(roleId).isNotBlank();
-        assertThat(secretId).isNotBlank();
+                assertThat(roleId).isNotBlank();
+                assertThat(secretId).isNotBlank();
 
-        // Build AppRole-authenticated provider
-        org.springframework.vault.authentication.AppRoleAuthenticationOptions options =
-                org.springframework.vault.authentication.AppRoleAuthenticationOptions.builder()
-                        .roleId(org.springframework.vault.authentication.AppRoleAuthenticationOptions
-                                .RoleId.provided(roleId))
-                        .secretId(org.springframework.vault.authentication.AppRoleAuthenticationOptions
-                                .SecretId.provided(secretId))
-                        .build();
+                // Build AppRole-authenticated provider
+                org.springframework.vault.authentication.AppRoleAuthenticationOptions options = org.springframework.vault.authentication.AppRoleAuthenticationOptions
+                                .builder()
+                                .roleId(org.springframework.vault.authentication.AppRoleAuthenticationOptions.RoleId
+                                                .provided(roleId))
+                                .secretId(org.springframework.vault.authentication.AppRoleAuthenticationOptions.SecretId
+                                                .provided(secretId))
+                                .build();
 
-        VaultEndpoint endpoint = VaultEndpoint.create(vault.getHost(), vault.getMappedPort(8200));
-        endpoint.setScheme("http");
+                VaultEndpoint endpoint = VaultEndpoint.create(vault.getHost(), vault.getMappedPort(8200));
+                endpoint.setScheme("http");
 
-        var requestFactory = org.springframework.vault.client.ClientHttpRequestFactoryFactory.create(
-                new org.springframework.vault.support.ClientOptions(),
-                org.springframework.vault.support.SslConfiguration.unconfigured());
-        org.springframework.web.client.RestTemplate restTemplate =
-                org.springframework.vault.client.VaultClients.createRestTemplate(endpoint, requestFactory);
-        var appRoleAuth = new org.springframework.vault.authentication.AppRoleAuthentication(
-                options, restTemplate);
-        VaultTemplate appRoleTemplate = new VaultTemplate(endpoint, appRoleAuth);
+                var requestFactory = org.springframework.vault.client.ClientHttpRequestFactoryFactory.create(
+                                new org.springframework.vault.support.ClientOptions(),
+                                org.springframework.vault.support.SslConfiguration.unconfigured());
+                org.springframework.web.client.RestTemplate restTemplate = org.springframework.vault.client.VaultClients
+                                .createRestTemplate(endpoint, requestFactory);
+                var appRoleAuth = new org.springframework.vault.authentication.AppRoleAuthentication(
+                                options, restTemplate);
+                VaultTemplate appRoleTemplate = new VaultTemplate(endpoint, appRoleAuth);
 
-        SecretManagerProperties.Vault appRoleProps = new SecretManagerProperties.Vault();
-        appRoleProps.setEnabled(true);
-        appRoleProps.setHost(vault.getHost());
-        appRoleProps.setPort(vault.getMappedPort(8200));
-        appRoleProps.setScheme("http");
-        appRoleProps.setAuthMethod(SecretManagerProperties.Vault.AuthMethod.APPROLE);
-        appRoleProps.getAppRole().setRoleId(roleId);
-        appRoleProps.getAppRole().setSecretId(secretId);
-        appRoleProps.setMount("secret");
-        appRoleProps.setKvVersion(2);
+                SecretManagerProperties.Vault appRoleProps = new SecretManagerProperties.Vault();
+                appRoleProps.setEnabled(true);
+                appRoleProps.setHost(vault.getHost());
+                appRoleProps.setPort(vault.getMappedPort(8200));
+                appRoleProps.setScheme("http");
+                appRoleProps.setAuthMethod(SecretManagerProperties.Vault.AuthMethod.APPROLE);
+                appRoleProps.getAppRole().setRoleId(roleId);
+                appRoleProps.getAppRole().setSecretId(secretId);
+                appRoleProps.setMount("secret");
+                appRoleProps.setKvVersion(2);
 
-        VaultSecretProvider appRoleProvider = new VaultSecretProvider(
-                appRoleTemplate, appRoleProps, new ObjectMapper());
+                VaultSecretProvider appRoleProvider = new VaultSecretProvider(
+                                appRoleTemplate, appRoleProps, new ObjectMapper());
 
-        Optional<String> result = appRoleProvider.getSecret("my-app");
-        assertThat(result).isPresent();
-        assertThat(result.get()).contains("admin");
-    }
+                Optional<String> result = appRoleProvider.getSecret("my-app");
+                assertThat(result).isPresent();
+                assertThat(result.get()).contains("admin");
+        }
 
-    @Test
-    void shouldThrowExceptionOnPermissionDenied() {
-        // Use an invalid token that has no permissions
-        VaultEndpoint endpoint = VaultEndpoint.create(vault.getHost(), vault.getMappedPort(8200));
-        endpoint.setScheme("http");
-        VaultTemplate noPermTemplate = new VaultTemplate(endpoint,
-                new TokenAuthentication("invalid-token-no-permissions"));
+        @Test
+        void shouldThrowExceptionOnPermissionDenied() {
+                // Use an invalid token that has no permissions
+                VaultEndpoint endpoint = VaultEndpoint.create(vault.getHost(), vault.getMappedPort(8200));
+                endpoint.setScheme("http");
+                VaultTemplate noPermTemplate = new VaultTemplate(endpoint,
+                                new TokenAuthentication("invalid-token-no-permissions"));
 
-        SecretManagerProperties.Vault noPermProps = new SecretManagerProperties.Vault();
-        noPermProps.setEnabled(true);
-        noPermProps.setHost(vault.getHost());
-        noPermProps.setToken("invalid-token-no-permissions");
-        noPermProps.setMount("secret");
-        noPermProps.setKvVersion(2);
+                SecretManagerProperties.Vault noPermProps = new SecretManagerProperties.Vault();
+                noPermProps.setEnabled(true);
+                noPermProps.setHost(vault.getHost());
+                noPermProps.setToken("invalid-token-no-permissions");
+                noPermProps.setMount("secret");
+                noPermProps.setKvVersion(2);
 
-        VaultSecretProvider noPermProvider = new VaultSecretProvider(
-                noPermTemplate, noPermProps, new ObjectMapper());
+                VaultSecretProvider noPermProvider = new VaultSecretProvider(
+                                noPermTemplate, noPermProps, new ObjectMapper());
 
-        assertThatThrownBy(() -> noPermProvider.getSecret("my-app"))
-                .isInstanceOf(SecretProviderException.class)
-                .satisfies(e -> assertThat(((SecretProviderException) e).isRetryable()).isFalse());
-    }
+                assertThatThrownBy(() -> noPermProvider.getSecret("my-app"))
+                                .isInstanceOf(SecretProviderException.class)
+                                .satisfies(e -> assertThat(((SecretProviderException) e).isRetryable()).isFalse());
+        }
 }
