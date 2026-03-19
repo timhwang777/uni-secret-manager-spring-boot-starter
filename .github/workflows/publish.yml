@@ -40,3 +40,8 @@ jobs:
         run: mvn deploy -Pgithub --batch-mode --no-transfer-progress -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger JitPack build
+        if: github.ref == 'refs/heads/main'
+        run: |
+          curl -s "https://jitpack.io/api/builds/com.github.timhwang777/uni-secret-manager-spring-boot-starter/main-SNAPSHOT" || true
