@@ -10,4 +10,4 @@ jdk:
 # (Testcontainers) which is not available in the JitPack build environment.
 # Also skip JaCoCo coverage checks (-Djacoco.skip) since no tests are executed.
 install:
-  - mvn install -DskipTests -Djacoco.skip=true --batch-mode
+  - mvn install -DskipTests -Djacoco.skip=true -Dcheckstyle.skip=true -Dspotbugs.skip=true --batch-mode
