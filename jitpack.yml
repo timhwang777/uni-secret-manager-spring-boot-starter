@@ -9,5 +9,6 @@ jdk:
 # Skip tests during JitPack builds — integration tests require Docker
 # (Testcontainers) which is not available in the JitPack build environment.
 # Also skip JaCoCo coverage checks (-Djacoco.skip) since no tests are executed.
+# Use Maven wrapper (./mvnw) to ensure Maven 3.9.9, required by checkstyle plugin.
 install:
-  - mvn install -DskipTests -Djacoco.skip=true -Dcheckstyle.skip=true -Dspotbugs.skip=true --batch-mode
+  - ./mvnw install -DskipTests -Djacoco.skip=true --batch-mode

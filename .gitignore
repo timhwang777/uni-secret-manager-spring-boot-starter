@@ -5,10 +5,13 @@ reports/
 target/
 *.class
 *.jar
+.mvn/*
+!.mvn/wrapper
+.mvn/wrapper/*
 !.mvn/wrapper/maven-wrapper.jar
-.mvn/
-mvnw
-mvnw.cmd
+!.mvn/wrapper/maven-wrapper.properties
+!mvnw
+!mvnw.cmd
 
 # IDE
 .idea/
