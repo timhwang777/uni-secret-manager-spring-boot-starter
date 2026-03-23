@@ -127,19 +127,25 @@ class ProviderOrderConfigurationTest {
     }
 
     @Test
-    void shouldHandleProviderOrderWithUnknownProviders() {
-        // Provider order includes "azure" which doesn't exist
+    void shouldThrowExceptionWhenProviderOrderContainsUnknownProvider() {
         properties.setProviderOrder(List.of("local", "azure", "aws", "gcp"));
 
-        SecretResolver resolver = new SecretResolver(
-                List.of(awsProvider, gcpProvider, localProvider),
-                properties,
-                cache
-        );
+        assertThatThrownBy(() ->
+                new SecretResolver(List.of(awsProvider, gcpProvider, localProvider), properties, cache)
+        )
+                .isInstanceOf(SecretConfigurationException.class)
+                .hasMessageContaining("Unknown provider 'azure'");
+    }
 
-        // Should still work, unknown providers are simply ignored
-        assertThat(resolver.getProviderChain(null))
-                .containsExactly("local", "azure", "aws", "gcp");
+    @Test
+    void shouldThrowExceptionWhenProviderOrderReferencesProviderWithoutBean() {
+        properties.setProviderOrder(List.of("local", "vault"));
+
+        assertThatThrownBy(() ->
+                new SecretResolver(List.of(awsProvider, gcpProvider, localProvider), properties, cache)
+        )
+                .isInstanceOf(SecretConfigurationException.class)
+                .hasMessageContaining("Provider 'vault' is referenced but not configured");
     }
 
     @Test

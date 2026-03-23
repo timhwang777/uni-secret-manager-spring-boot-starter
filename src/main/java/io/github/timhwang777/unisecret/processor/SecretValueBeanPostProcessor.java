@@ -114,6 +114,9 @@ public class SecretValueBeanPostProcessor implements BeanPostProcessor {
             // STEP 1: Convert annotation attributes to a SecretReference object
             SecretReference reference = buildReference(annotation);
 
+            // Fail fast during startup if the annotation references providers that are not configured.
+            validateProviders(reference);
+
             // STEP 2: Resolve the secret value using the configured provider chain
             // This may throw SecretNotFoundException if not found and no default
             String secretValue = getSecretResolver().resolve(reference);
@@ -165,5 +168,18 @@ public class SecretValueBeanPostProcessor implements BeanPostProcessor {
                 .providers(providersList.isEmpty() ? null : providersList)                  // Optional: custom chain
                 .defaultValue(annotation.defaultValue().isEmpty() ? null : annotation.defaultValue()) // Optional: fallback
                 .build();
+    }
+
+    private void validateProviders(SecretReference reference) {
+        SecretResolver resolver = getSecretResolver();
+
+        if (reference.getProvider() != null && !reference.getProvider().isBlank()) {
+            resolver.validateConfiguredProviders(List.of(reference.getProvider()));
+            return;
+        }
+
+        if (reference.getProviders() != null && !reference.getProviders().isEmpty()) {
+            resolver.validateConfiguredProviders(reference.getProviders());
+        }
     }
 }

@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 @TestPropertySource(properties = {
         "secrets.enabled=true",
-        "secrets.provider-order=local,aws,gcp",
+        "secrets.provider-order=local",
         "secrets.fail-on-missing=false",
         "secrets.local.enabled=true",
         "secrets.local.secrets.local-secret=local-value",
@@ -100,7 +100,7 @@ class MultiProviderIntegrationTest {
     @Test
     void shouldConfigureProviderOrder() {
         assertThat(properties).isNotNull();
-        assertThat(properties.getProviderOrder()).containsExactly("local", "aws", "gcp");
+        assertThat(properties.getProviderOrder()).containsExactly("local");
     }
 
     @Test

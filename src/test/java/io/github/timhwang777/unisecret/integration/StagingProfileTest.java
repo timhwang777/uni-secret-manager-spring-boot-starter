@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("staging")
 @TestPropertySource(properties = {
         "secrets.enabled=true",
-        "secrets.provider-order=local,aws",
+        "secrets.provider-order=local",
         "secrets.local.enabled=true",
         "secrets.local.secrets.test-secret=staging-value",
         "secrets.aws.enabled=false",
@@ -55,7 +55,7 @@ class StagingProfileTest {
     @Test
     void shouldConfigureMixedProvidersInStagingProfile() {
         assertThat(properties).isNotNull();
-        assertThat(properties.getProviderOrder()).containsExactly("local", "aws");
+        assertThat(properties.getProviderOrder()).containsExactly("local");
     }
 
     @Test

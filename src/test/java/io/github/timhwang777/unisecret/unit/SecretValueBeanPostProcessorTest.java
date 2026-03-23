@@ -1,6 +1,7 @@
 package io.github.timhwang777.unisecret.unit;
 
 import io.github.timhwang777.unisecret.annotation.SecretValue;
+import io.github.timhwang777.unisecret.exception.SecretConfigurationException;
 import io.github.timhwang777.unisecret.processor.SecretValueBeanPostProcessor;
 import io.github.timhwang777.unisecret.provider.SecretReference;
 import io.github.timhwang777.unisecret.provider.SecretResolver;
@@ -34,6 +35,16 @@ class SecretValueBeanPostProcessorTest {
         private String anotherSecretField;
 
         private String normalField;
+    }
+
+    static class InvalidProviderBean {
+        @SecretValue(value = "test-secret", provider = "vault")
+        private String secretField;
+    }
+
+    static class InvalidProvidersBean {
+        @SecretValue(value = "test-secret", providers = {"local", "vault"})
+        private String secretField;
     }
 
     @BeforeEach
@@ -77,6 +88,36 @@ class SecretValueBeanPostProcessorTest {
         Object result = processor.postProcessBeforeInitialization(bean, "plainBean");
 
         assertThat(result).isSameAs(bean);
+        verify(secretResolver, never()).resolve(any(SecretReference.class));
+    }
+
+    @Test
+    void shouldFailFastWhenAnnotationProviderIsNotConfigured() {
+        InvalidProviderBean bean = new InvalidProviderBean();
+
+        when(secretResolverProvider.getObject()).thenReturn(secretResolver);
+        doThrow(new SecretConfigurationException("Provider 'vault' is referenced but not configured"))
+                .when(secretResolver).validateConfiguredProviders(java.util.List.of("vault"));
+
+        assertThatThrownBy(() -> processor.postProcessBeforeInitialization(bean, "invalidProviderBean"))
+                .isInstanceOf(SecretConfigurationException.class)
+                .hasMessageContaining("Provider 'vault' is referenced but not configured");
+
+        verify(secretResolver, never()).resolve(any(SecretReference.class));
+    }
+
+    @Test
+    void shouldFailFastWhenAnnotationProviderChainContainsUnconfiguredProvider() {
+        InvalidProvidersBean bean = new InvalidProvidersBean();
+
+        when(secretResolverProvider.getObject()).thenReturn(secretResolver);
+        doThrow(new SecretConfigurationException("Provider 'vault' is referenced but not configured"))
+                .when(secretResolver).validateConfiguredProviders(java.util.List.of("local", "vault"));
+
+        assertThatThrownBy(() -> processor.postProcessBeforeInitialization(bean, "invalidProvidersBean"))
+                .isInstanceOf(SecretConfigurationException.class)
+                .hasMessageContaining("Provider 'vault' is referenced but not configured");
+
         verify(secretResolver, never()).resolve(any(SecretReference.class));
     }
 }

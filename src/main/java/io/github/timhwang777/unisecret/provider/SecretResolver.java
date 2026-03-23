@@ -139,7 +139,10 @@ public class SecretResolver {
         // This allows users to write "AWS", "aws", or "Aws" in config
         normalizeProviderOrder(properties);
 
-        // VALIDATION 3: At least one provider must be enabled
+        // VALIDATION 3: Provider order must reference valid configured providers
+        validateConfiguredProviders(properties.getProviderOrder());
+
+        // VALIDATION 4: At least one provider must be enabled
         validateAtLeastOneProviderEnabled(providerList);
 
         log.info("SecretResolver initialized with providers: {}", providers.keySet());
@@ -184,6 +187,33 @@ public class SecretResolver {
                 .map(String::toLowerCase)
                 .collect(Collectors.toList());
         properties.setProviderOrder(normalized);
+    }
+
+    /**
+     * Validates that each provider name is known and backed by a configured provider bean.
+     *
+     * @param providerNames provider names from configuration or annotations
+     * @throws SecretConfigurationException if a provider is unknown or not configured
+     */
+    public void validateConfiguredProviders(List<String> providerNames) {
+        for (String providerName : providerNames) {
+            ProviderType providerType;
+            try {
+                providerType = ProviderType.fromConfigValue(providerName);
+            } catch (IllegalArgumentException e) {
+                throw new SecretConfigurationException(
+                        "Unknown provider '" + providerName + "' in provider configuration",
+                        e
+                );
+            }
+
+            if (!providers.containsKey(providerType)) {
+                throw new SecretConfigurationException(
+                        "Provider '" + providerName + "' is referenced but not configured. "
+                                + "Enable it in application settings first."
+                );
+            }
+        }
     }
 
     /**
