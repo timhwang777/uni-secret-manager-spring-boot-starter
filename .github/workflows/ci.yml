@@ -5,27 +5,71 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  unit-core:
+    name: Core JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ["17", "21"]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
-          java-version: "21"
-          distribution: "temurin"
+          java-version: ${{ matrix.java }}
+          distribution: temurin
           cache: maven
 
-      - name: Run tests and checks
-        run: mvn verify --batch-mode --no-transfer-progress
+      - name: Run core tests
+        run: ./mvnw -pl uni-secret-manager-core test --batch-mode --no-transfer-progress
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
+  boot3:
+    name: Boot 3 JDK ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ["17", "21"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v5
         with:
-          name: coverage-report
-          path: target/site/jacoco/
-          retention-days: 7
+          java-version: ${{ matrix.java }}
+          distribution: temurin
+          cache: maven
+
+      - name: Verify Boot 3 modules
+        run: >
+          ./mvnw -pl
+          uni-secret-manager-spring-boot3-autoconfigure,uni-secret-manager-spring-boot3-starter
+          -am verify --batch-mode --no-transfer-progress
+
+  boot4:
+    name: Boot 4 JDK ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ["17", "21"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: temurin
+          cache: maven
+
+      - name: Verify Boot 4 modules
+        run: >
+          ./mvnw -pl
+          uni-secret-manager-spring-boot4-autoconfigure,uni-secret-manager-spring-boot4-starter
+          -am verify --batch-mode --no-transfer-progress

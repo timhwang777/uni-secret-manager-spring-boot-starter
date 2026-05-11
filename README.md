@@ -1,67 +1,52 @@
-# Universal Secret Manager Spring Boot Starter
+# Universal Secret Manager
 
-Spring Boot starter for retrieving secrets from multiple backends (AWS Secrets Manager, GCP Secret Manager, and local config) through one annotation-based API.
+Secret resolution library for retrieving secrets from multiple backends through one annotation-based API.
+Version 2.x uses explicit Spring Boot line starters instead of one general starter artifact.
 
 ## Features
 
 - `@SecretValue` field injection for secret values in Spring beans
-- Provider fallback chain (`aws -> gcp -> local` by default)
+- Explicit provider fallback chain (`aws`, `gcp`, `vault`, `local`, or custom ids)
 - Per-field provider override (`provider`) and custom provider chains (`providers`)
 - JSON field extraction (`field = "..."`) from structured secrets
 - Version/stage support (`version = "latest"`, specific versions, AWS `previous`)
 - In-memory caching with Caffeine (TTL + max size)
 - Retry with exponential backoff for retryable provider errors
 - Runtime cache invalidation via `SecretRefreshService`
-- Profile-friendly configuration (`application-dev.yml`, `application-prod.yml`, etc.)
+- Passive auto-configuration: no providers are enabled unless configured
 
 ## Requirements
 
-- Java 21+
-- Maven 3.8+
-- Spring Boot 3.2+
+- Java 17+ bytecode
+- Maven 3.6.3+
+- Spring Boot 3.5.x: use `uni-secret-manager-spring-boot3-starter`
+- Spring Boot 4.0.x: use `uni-secret-manager-spring-boot4-starter`
 
 ## Installation
 
-### Option A: JitPack (Recommended)
+Choose the starter that matches your Spring Boot line.
 
-JitPack builds and serves Maven artifacts directly from this GitHub repository.
-No authentication or tokens required.
-
-**1. Add the JitPack repository to your `pom.xml`:**
-
-```xml
-<repositories>
-  <repository>
-    <id>jitpack.io</id>
-    <url>https://jitpack.io</url>
-  </repository>
-</repositories>
-```
-
-**2. Add the dependency:**
-
-```xml
-<dependency>
-  <groupId>com.github.timhwang777</groupId>
-  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
-  <version>v1.0.0</version>
-</dependency>
-```
-
-Replace `v1.0.0` with the latest [release tag](https://github.com/timhwang777/uni-secret-manager-spring-boot-starter/tags).
-
-### Option B: GitHub Packages
-
-GitHub Packages requires a GitHub account and a Personal Access Token with `read:packages` scope.
-See [docs/PUBLISHING_GUIDE.md](docs/PUBLISHING_GUIDE.md#option-a-github-packages) for full setup instructions.
+### Spring Boot 3 Applications
 
 ```xml
 <dependency>
   <groupId>io.github.timhwang777</groupId>
-  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
-  <version>1.0.0</version>
+  <artifactId>uni-secret-manager-spring-boot3-starter</artifactId>
+  <version>2.0.0-M1</version>
 </dependency>
 ```
+
+### Spring Boot 4 Applications
+
+```xml
+<dependency>
+  <groupId>io.github.timhwang777</groupId>
+  <artifactId>uni-secret-manager-spring-boot4-starter</artifactId>
+  <version>2.0.0-M1</version>
+</dependency>
+```
+
+The 1.x `uni-secret-manager-spring-boot-starter` coordinate is not published as a 2.x artifact.
 
 ## Quick Start (Local Provider)
 
@@ -162,7 +147,7 @@ secrets:
 ```
 
 - Authentication uses Application Default Credentials (ADC).
-- If `project-id` is omitted, default ADC project resolution is used.
+- `project-id` is required when the GCP provider is enabled.
 
 ### Local Provider (Dev/Test)
 
@@ -175,11 +160,7 @@ secrets:
       db-password: local-pass
 ```
 
-Implementation lookup order in `LocalSecretProvider#getSecret(String key, String version)`:
-
-1. `secrets.local.secrets.<key>`
-2. `secrets.local.<key>`
-3. `<key>`
+The local provider resolves only values from `secrets.local.secrets`.
 
 ## Core Configuration Options
 
@@ -205,6 +186,8 @@ Notes:
 
 - `fail-on-missing=true`: throws `SecretNotFoundException` when no provider returns a secret and no `defaultValue` is set.
 - `fail-on-missing=false`: returns `null` for unresolved secrets (unless `defaultValue` is set).
+- Sample configuration lives in [docs/examples/application.yml](docs/examples/application.yml); it is not shipped in starter jars.
+- AWS binary secrets are unsupported in 2.0 and fail with a non-retryable provider error.
 
 ## Runtime Refresh
 

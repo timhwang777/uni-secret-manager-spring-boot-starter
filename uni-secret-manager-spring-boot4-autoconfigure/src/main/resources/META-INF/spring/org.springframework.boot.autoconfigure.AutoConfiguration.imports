@@ -1,0 +1,2 @@
+io.github.timhwang777.unisecret.config.SecretManagerAutoConfiguration
+io.github.timhwang777.unisecret.config.VaultAutoConfiguration

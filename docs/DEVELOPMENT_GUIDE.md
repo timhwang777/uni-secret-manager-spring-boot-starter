@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers the tools, workflows, and best practices for developing the Universal Secret Manager Spring Boot Starter.
+This guide covers the tools, workflows, and best practices for developing Universal Secret Manager 2.x.
 
 ## Table of Contents
 
@@ -18,9 +18,9 @@ This guide covers the tools, workflows, and best practices for developing the Un
 
 | Tool | Purpose |
 |------|---------|
-| **Java 21** | Language (LTS version) |
+| **Java 17 bytecode** | Library compatibility baseline |
 | **Maven** | Build automation and dependency management |
-| **Spring Boot 3.2** | Framework for auto-configuration |
+| **Spring Boot 3.5 / 4.0** | Separate auto-configuration and starter lines |
 | **JaCoCo** | Code coverage measurement |
 | **JUnit 5** | Unit testing framework |
 | **Testcontainers** | Integration testing with Docker |
@@ -54,26 +54,26 @@ compile → test → package → verify → install
 ### Common Commands
 
 ```bash
-# Compile only (quick syntax check)
+# Compile all modules
 mvn compile
 
-# Run all tests
+# Run all available tests
 mvn test
 
-# Run a specific test class
-mvn test -Dtest=SecretManagerServiceTest
+# Run core contract tests
+mvn -pl uni-secret-manager-core test
 
-# Run a specific test method
-mvn test -Dtest=SecretManagerServiceTest#testGetSecret
+# Run Boot 3 auto-configuration tests
+mvn -pl uni-secret-manager-spring-boot3-autoconfigure -am test
 
-# Run tests matching a pattern
-mvn test -Dtest=*Integration*
+# Run Boot 4 auto-configuration tests
+mvn -pl uni-secret-manager-spring-boot4-autoconfigure -am test
 
-# Full CI check (compile + test + coverage check)
-mvn verify
+# Package the explicit Boot 3 starter
+mvn -pl uni-secret-manager-spring-boot3-starter -am package
 
-# Build the JAR
-mvn package
+# Package the explicit Boot 4 starter
+mvn -pl uni-secret-manager-spring-boot4-starter -am package
 
 # Clean build artifacts
 mvn clean
@@ -143,9 +143,14 @@ This ensures only hand-written code is measured.
 ### Test Structure
 
 ```
-src/test/java/
-├── unit/           # Fast, isolated unit tests (mocked dependencies)
-└── integration/    # Slower tests with real services (Docker)
+uni-secret-manager-core/src/test/java/
+└── ...ContractTest.java
+
+uni-secret-manager-spring-boot3-autoconfigure/src/test/java/
+└── Boot3AutoConfigurationTest.java
+
+uni-secret-manager-spring-boot4-autoconfigure/src/test/java/
+└── Boot4AutoConfigurationTest.java
 ```
 
 ### Unit Tests
@@ -209,7 +214,9 @@ mvn versions:display-dependency-updates
 
 ### What NOT to Update
 
-- **Spring Boot parent** to 4.x (milestone, not stable)
+- Do not reintroduce the 1.x `uni-secret-manager-spring-boot-starter` artifact in 2.x.
+- Do not put sample `application.yml` under runtime resources.
+- Keep the core module free of Spring Boot and Spring Framework dependencies.
 - **SLF4J** to alpha versions
 - Dependencies to release candidates (RC) or milestones (M1)
 
@@ -278,7 +285,7 @@ mvn clean verify
 mvn package
 
 # 3. JAR location:
-#    target/uni-secret-manager-spring-boot-starter-1.0.0-SNAPSHOT.jar
+#    target/uni-secret-manager-spring-boot3-starter-2.0.0-M1.jar
 ```
 
 ---
@@ -303,13 +310,13 @@ requests a version.
 
 **How it works:**
 
-1. Developer pushes a git tag (e.g., `v1.0.0`)
+1. Developer pushes a git tag (e.g., `v2.0.0-M1`)
 2. Consumer adds JitPack repository + dependency to their `pom.xml`
 3. On first resolution, JitPack clones the repo and runs `mvn install`
 4. The built artifact is cached and served for all subsequent requests
 
 **Build configuration** is defined in `jitpack.yml` at the project root:
-- Uses JDK 21 (JitPack defaults to JDK 8)
+- Uses JDK 17 (JitPack defaults to JDK 8)
 - Skips tests and JaCoCo (no Docker/Testcontainers available on JitPack)
 
 **Consumer setup** — no tokens, no `settings.xml`, just add to `pom.xml`:
@@ -324,8 +331,8 @@ requests a version.
 
 <dependency>
   <groupId>com.github.timhwang777</groupId>
-  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
-  <version>v1.0.0</version>
+  <artifactId>uni-secret-manager-spring-boot3-starter</artifactId>
+  <version>v2.0.0-M1</version>
 </dependency>
 ```
 

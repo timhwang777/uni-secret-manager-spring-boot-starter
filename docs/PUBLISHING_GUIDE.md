@@ -1,6 +1,14 @@
 # Publishing Maven Artifacts: A Complete Guide
 
-This guide covers how to publish your Maven project (`uni-secret-manager-spring-boot-starter`) to package registries using GitHub.
+This guide covers how to publish Universal Secret Manager artifacts to package registries.
+
+For 2.x, do not publish the old general `uni-secret-manager-spring-boot-starter` artifact.
+Publish only the explicit Boot-line starters:
+
+- `io.github.timhwang777:uni-secret-manager-spring-boot3-starter`
+- `io.github.timhwang777:uni-secret-manager-spring-boot4-starter`
+
+The shared Boot adapter source directory is an internal build input and is not a runtime artifact.
 
 ## Table of Contents
 
@@ -73,8 +81,8 @@ Maven Central (and good practice) requires these elements in your `pom.xml`:
 <project>
     <!-- GAV Coordinates (you already have these) -->
     <groupId>io.github.timhwang777</groupId>
-    <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <artifactId>uni-secret-manager-spring-boot3-starter</artifactId>
+    <version>2.0.0-M1</version>
 
     <!-- Required metadata -->
     <name>Universal Secret Manager Spring Boot Starter</name>
@@ -174,11 +182,11 @@ There is no publishing step — JitPack builds on first consumer request and cac
 
 ### How JitPack Works
 
-1. You push a git tag (e.g., `v1.0.0`) to GitHub
+1. You push a git tag (e.g., `v2.0.0-M1`) to GitHub
 2. A consumer adds the JitPack repository and dependency to their `pom.xml`
 3. On first dependency resolution, JitPack clones your repo and runs `mvn install`
 4. The built artifact is cached and served for all subsequent requests
-5. Build logs are available at `https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot-starter`
+5. Build logs are available at `https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot3-starter`
 
 ### Project Configuration
 
@@ -187,13 +195,13 @@ JitPack reads `jitpack.yml` in the project root to customize the build environme
 ```yaml
 # jitpack.yml
 jdk:
-  - openjdk21
+  - openjdk17
 
 install:
   - mvn install -DskipTests -Djacoco.skip=true --batch-mode
 ```
 
-- **JDK 21**: JitPack defaults to JDK 8; this override is required for our project.
+- **JDK 17**: JitPack defaults to JDK 8; this override is required for our project.
 - **Skip tests**: JitPack does not provide Docker, so Testcontainers-based integration tests cannot run.
 - **Skip JaCoCo**: Coverage checks fail with 0% when tests are skipped.
 
@@ -214,8 +222,8 @@ Consumers only need to add the following to their `pom.xml` — no tokens, no `s
 
 <dependency>
   <groupId>com.github.timhwang777</groupId>
-  <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
-  <version>v1.0.0</version>
+  <artifactId>uni-secret-manager-spring-boot3-starter</artifactId>
+  <version>v2.0.0-M1</version>
 </dependency>
 ```
 
@@ -228,7 +236,7 @@ JitPack supports several version formats:
 
 | Version Format | Example | Description |
 |---------------|---------|-------------|
-| Release tag | `v1.0.0` | Recommended for production |
+| Release tag | `v2.0.0-M1` | Recommended for production |
 | Commit hash | `a1b2c3d` | Specific commit (for testing) |
 | Branch-SNAPSHOT | `main-SNAPSHOT` | Latest commit on a branch |
 
@@ -239,11 +247,11 @@ JitPack supports several version formats:
 mvn clean verify
 
 # 2. Tag a release
-git tag v1.0.0
-git push origin v1.0.0
+git tag v2.0.0-M1
+git push origin v2.0.0-M1
 
 # 3. (Optional) Verify the build at:
-#    https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot-starter/v1.0.0
+#    https://jitpack.io/#timhwang777/uni-secret-manager-spring/v2.0.0-M1
 ```
 
 The first consumer request for this version triggers the build. You can also
@@ -251,9 +259,9 @@ pre-trigger it by visiting the JitPack URL above.
 
 ### JitPack Troubleshooting
 
-- **Build fails on JitPack**: Check build logs at `https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot-starter`
+- **Build fails on JitPack**: Check build logs at `https://jitpack.io/#timhwang777/uni-secret-manager-spring-boot3-starter`
 - **First resolution is slow**: JitPack builds on demand; the first request takes 1-3 minutes. Subsequent requests are cached.
-- **Wrong JDK version**: Verify `jitpack.yml` exists in the tagged commit and specifies `openjdk21`.
+- **Wrong JDK version**: Verify `jitpack.yml` exists in the tagged commit and specifies `openjdk17`.
 
 ---
 
@@ -276,7 +284,7 @@ GitHub Packages distribution is configured via the `github` Maven profile in `po
             <repository>
                 <id>github</id>
                 <name>GitHub Packages</name>
-                <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
+                <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot3-starter</url>
             </repository>
         </distributionManagement>
     </profile>
@@ -290,10 +298,10 @@ Deploy with: `mvn deploy -Pgithub`
 Create or edit `~/.m2/settings.xml`:
 
 ```xml
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+<settings xmlns="http://maven.apache.org/SETTINGS/2.0.0-M1"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
-                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/2.0.0-M1
+                              http://maven.apache.org/xsd/settings-2.0.0-M1.xsd">
     <servers>
         <server>
             <id>github</id>
@@ -318,7 +326,7 @@ Create or edit `~/.m2/settings.xml`:
 
 ```bash
 # Remove -SNAPSHOT from version for release
-mvn versions:set -DnewVersion=1.0.0
+mvn versions:set -DnewVersion=2.0.0-M1
 
 # Deploy to GitHub Packages
 mvn deploy
@@ -344,10 +352,10 @@ Others can use your package, but they must complete additional setup first.
 **Step B: Consumer configures their `~/.m2/settings.xml`**
 
 ```xml
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+<settings xmlns="http://maven.apache.org/SETTINGS/2.0.0-M1"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
-                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/2.0.0-M1
+                              http://maven.apache.org/xsd/settings-2.0.0-M1.xsd">
     <servers>
         <server>
             <id>github</id>
@@ -371,8 +379,8 @@ Others can use your package, but they must complete additional setup first.
 <dependencies>
     <dependency>
         <groupId>io.github.timhwang777</groupId>
-        <artifactId>uni-secret-manager-spring-boot-starter</artifactId>
-        <version>1.0.0</version>
+        <artifactId>uni-secret-manager-spring-boot3-starter</artifactId>
+        <version>2.0.0-M1</version>
     </dependency>
 </dependencies>
 ```
@@ -468,7 +476,7 @@ Add to your `pom.xml`:
 
 ```bash
 # Ensure version is NOT -SNAPSHOT
-mvn versions:set -DnewVersion=1.0.0
+mvn versions:set -DnewVersion=2.0.0-M1
 
 # Deploy (includes signing)
 mvn deploy
@@ -517,7 +525,7 @@ With profiles, each `mvn deploy -P<target>` activates only the relevant configur
             <repository>
                 <id>github</id>
                 <name>GitHub Packages</name>
-                <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot-starter</url>
+                <url>https://maven.pkg.github.com/timhwang777/uni-secret-manager-spring-boot3-starter</url>
             </repository>
         </distributionManagement>
     </profile>
@@ -648,7 +656,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -665,7 +673,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -704,15 +712,15 @@ Go to Repository → Settings → Secrets and variables → Actions:
 ### Semantic Versioning
 
 Follow [SemVer](https://semver.org/):
-- **MAJOR** (1.0.0 → 2.0.0): Breaking changes
-- **MINOR** (1.0.0 → 1.1.0): New features, backward compatible
-- **PATCH** (1.0.0 → 1.0.1): Bug fixes, backward compatible
+- **MAJOR** (2.0.0-M1 → 2.0.0): Breaking changes
+- **MINOR** (2.0.0-M1 → 1.1.0): New features, backward compatible
+- **PATCH** (2.0.0-M1 → 1.0.1): Bug fixes, backward compatible
 
 ### Release Process
 
 1. **Update version** (remove -SNAPSHOT):
    ```bash
-   mvn versions:set -DnewVersion=1.0.0
+   mvn versions:set -DnewVersion=2.0.0-M1
    mvn versions:commit
    ```
 
@@ -721,8 +729,8 @@ Follow [SemVer](https://semver.org/):
 3. **Commit and tag**:
    ```bash
    git add .
-   git commit -m "Release version 1.0.0"
-   git tag -a v1.0.0 -m "Version 1.0.0"
+   git commit -m "Release version 2.0.0-M1"
+   git tag -a v2.0.0-M1 -m "Version 2.0.0-M1"
    git push origin main --tags
    ```
 

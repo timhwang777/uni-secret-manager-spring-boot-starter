@@ -2,9 +2,9 @@
 # JitPack uses this file to customize the build environment.
 # See: https://jitpack.io/docs/BUILDING/
 
-# JitPack defaults to JDK 8; this project requires JDK 21.
+# JitPack defaults to JDK 8; this project requires JDK 17+.
 jdk:
-  - openjdk21
+  - openjdk17
 
 # Skip tests during JitPack builds — integration tests require Docker
 # (Testcontainers) which is not available in the JitPack build environment.
